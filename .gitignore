@@ -2,7 +2,6 @@
 *.so
 *.pyc
 *.pdf
-*.bin
 nbody
 .DS_Store
 error.txt
