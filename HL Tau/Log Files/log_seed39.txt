@@ -1,0 +1,12 @@
+Simulation for Seed 39
+
+Solar mass star added at center.
+Jupiter mass planet added 13.2 AU away and 75.5464480331 degrees.
+Jupiter mass planet added 32.3 AU away and 138.743248055 degrees.
+Jupiter mass planet added 64.2 AU away and 70.2217131808 degrees.
+Jupiter mass planet added 73.7 AU away and 142.416240144 degrees.
+Jupiter mass planet added 91.0 AU away and 202.565081134 degrees.
+Planet 2 has been ejected at t = 228946.283155.
+Planet 1 has been ejected at t = 245999.321544.
+Number of planets at the end of the simulation: 3
+

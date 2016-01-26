@@ -1,0 +1,13 @@
+Simulation for Seed 27
+
+Solar mass star added at center.
+Jupiter mass planet added 13.2 AU away and 233.458999192 degrees.
+Jupiter mass planet added 32.3 AU away and 252.493034749 degrees.
+Jupiter mass planet added 64.2 AU away and 344.536920957 degrees.
+Jupiter mass planet added 73.7 AU away and 70.7051192717 degrees.
+Jupiter mass planet added 91.0 AU away and 23.5329247384 degrees.
+Planet 2 has been ejected at t = 187695.013357.
+Planets 1 and 3 have collided and merged at t = 286295.530537.
+Planet 5 has been ejected at t = 447998.451394.
+Number of planets at the end of the simulation: 2
+

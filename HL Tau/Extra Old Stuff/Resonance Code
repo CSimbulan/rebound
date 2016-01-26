@@ -1,0 +1,33 @@
+## This is for resonant plots
+
+'''
+%matplotlib inline
+
+## Number of outputs
+Noutputs = 100000
+times = np.linspace(0,5.0e3*2.*np.pi,Noutputs)
+
+## Resonance angle for planets 3 and 4
+phi = [zeroTo360(4.*longitude[1][i] - 3.*longitude[0][i] - varpi[0][i]) for i in range(Noutputs)]
+fig = plt.figure(figsize=(12,5))
+ax = plt.subplot(111)
+ax.plot(times,phi)
+ax.set_xlim([0,2000])
+ax.set_ylim([0,360.])
+ax.set_xlabel("time (yrs)", fontsize=20)
+ax.set_ylabel(r"$\phi_{4:3}$", fontsize=20)
+ax.tick_params(labelsize=20)
+'''
+
+'''
+## Resonance angle for planets 4 and 5
+phi = [zeroTo360(4.*longitude[2][i] - 3.*longitude[1][i] - varpi[1][i]) for i in range(Noutputs)]
+fig = plt.figure(figsize=(12,5))
+ax = plt.subplot(111)
+ax.plot(times,phi)
+ax.set_xlim([0,2000])
+ax.set_ylim([0,360.])
+ax.set_xlabel("time (yrs)", fontsize=20)
+ax.set_ylabel(r"$\phi_{4:3}$", fontsize=20)
+ax.tick_params(labelsize=20)
+'''

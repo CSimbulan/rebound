@@ -1,0 +1,17 @@
+Newest
+
+Solar mass star added at center.
+Jupiter mass planet added 13.2 AU away and 166.682648813 degrees.
+Jupiter mass planet added 32.3 AU away and 134.392295302 degrees.
+Jupiter mass planet added 64.2 AU away and 49.8741885052 degrees.
+Jupiter mass planet added 73.7 AU away and 311.962265995 degrees.
+Jupiter mass planet added 91.0 AU away and 2.3166194692 degrees.
+Planet 1 has been ejected at t = 362155.92012.
+Planet 3 has been ejected at t = 380282.0278.
+Planet 2 has been ejected at t = 1198921.60913.
+Number of planets at the end of the simulation: 2
+
+simulation: 2
+
+
+

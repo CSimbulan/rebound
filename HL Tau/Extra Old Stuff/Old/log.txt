@@ -1,0 +1,13 @@
+Solar mass star added at center.
+Saturn mass planet added 13.6 AU away and 176.878830135 degrees.
+Saturn mass planet added 33.3 AU away and 211.967143282 degrees.
+Saturn mass planet added 65.1 AU away and 288.816557239 degrees.
+Saturn mass planet added 77.3 AU away and 233.633573639 degrees.
+Saturn mass planet added 93.0 AU away and 345.123041723 degrees.
+Planet 2 has been ejected at t = 1953461.84662.
+Planet 3 has been ejected at t = 6307124.48259.
+Planet 5 has been ejected at t = 6477400.50718.
+Planet 4 has been ejected at t = 6949272.44247.
+Planet 1 has been ejected at t = 13223724.0347.
+Number of planets at the end of the simulation: 0
+

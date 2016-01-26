@@ -1,0 +1,14 @@
+Newest
+
+Solar mass star added at center.
+Saturn mass planet added 13.6 AU away and 326.184672968 degrees.
+Saturn mass planet added 33.3 AU away and 213.770539626 degrees.
+Saturn mass planet added 65.1 AU away and 204.576050662 degrees.
+Saturn mass planet added 77.3 AU away and 207.544423965 degrees.
+Saturn mass planet added 93.0 AU away and 309.01820967 degrees.
+Planets 3 and 4 have collided and merged at t = 49637.6603033.
+Number of planets at the end of the simulation: 4
+
+nets 0 and 2 have collided and merged at t = 35782469.8306.
+Number of planets at the end of the simulation: 2
+

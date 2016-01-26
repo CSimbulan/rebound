@@ -1,0 +1,13 @@
+Simulation for Seed 89
+
+Solar mass star added at center.
+Jupiter mass planet added 13.2 AU away and 29.1926392646 degrees.
+Jupiter mass planet added 32.3 AU away and 218.449004093 degrees.
+Jupiter mass planet added 64.2 AU away and 359.182026186 degrees.
+Jupiter mass planet added 73.7 AU away and 50.6112277801 degrees.
+Jupiter mass planet added 91.0 AU away and 306.822974855 degrees.
+Planets 1 and 2 have collided and merged at t = 173457.224096.
+Planet 5 has been ejected at t = 239394.292027.
+Planet 3 has been ejected at t = 327849.976409.
+Number of planets at the end of the simulation: 2
+

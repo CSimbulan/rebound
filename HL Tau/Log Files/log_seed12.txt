@@ -1,0 +1,11 @@
+Simulation for Seed 12
+
+Solar mass star added at center.
+Jupiter mass planet added 13.2 AU away and 170.845444328 degrees.
+Jupiter mass planet added 32.3 AU away and 236.690100957 degrees.
+Jupiter mass planet added 64.2 AU away and 239.907769605 degrees.
+Jupiter mass planet added 73.7 AU away and 51.3361270531 degrees.
+Jupiter mass planet added 91.0 AU away and 3.90975951242 degrees.
+Planets 4 and 5 have collided and merged at t = 2258.04991191.
+Number of planets at the end of the simulation: 4
+

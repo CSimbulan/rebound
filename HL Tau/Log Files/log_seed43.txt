@@ -1,0 +1,13 @@
+Simulation for Seed 43
+
+Solar mass star added at center.
+Jupiter mass planet added 13.2 AU away and 13.8786621615 degrees.
+Jupiter mass planet added 32.3 AU away and 250.640756149 degrees.
+Jupiter mass planet added 64.2 AU away and 51.8159597023 degrees.
+Jupiter mass planet added 73.7 AU away and 166.511611738 degrees.
+Jupiter mass planet added 91.0 AU away and 241.792835082 degrees.
+Planets 4 and 5 have collided and merged at t = 96932.6006312.
+Planet 2 has been ejected at t = 163723.922572.
+Planet 1 has been ejected at t = 237057.526475.
+Number of planets at the end of the simulation: 2
+
