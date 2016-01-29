@@ -252,6 +252,7 @@ struct reb_simulation* reb_create_simulation(){
 }
 
 void reb_init_simulation(struct reb_simulation* r){
+    r->exit_min_peri = 0;
 #ifndef LIBREBOUND
 	int i =0;
 	while (logo[i]!=NULL){ printf("%s",logo[i++]); }
@@ -420,6 +421,25 @@ int reb_check_exit(struct reb_simulation* const r, const double tmax, double* la
 
 void reb_run_heartbeat(struct reb_simulation* const r){
 	if (r->heartbeat){ r->heartbeat(r); }				// Heartbeat
+    if (r->exit_min_peri){
+        // Check for custom condition
+
+		const double min2 = r->exit_min_peri * r->exit_min_peri;
+		const struct reb_particle* const particles = r->particles;
+		const int N = r->N - r->N_var;
+		const struct reb_particle star = particles[0];
+		for(int i=1;i<N;i++){
+			struct reb_particle pi = particles[i];
+			const double x = pi.x - star.x;
+			const double y = pi.y - star.y;
+			const double z = pi.z - star.z;
+			const double r2 = x*x + y*y + z*z;
+
+			if (r2 < min2){
+				r->status = REB_EXIT_MIN_PERI;
+			}
+		}
+    }
 	if (r->exit_max_distance){
 		// Check for escaping particles
 		const double max2 = r->exit_max_distance * r->exit_max_distance;

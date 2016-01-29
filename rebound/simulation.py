@@ -1,5 +1,5 @@
 from ctypes import Structure, c_double, POINTER, c_int, c_uint, c_long, c_ulong, c_void_p, c_char_p, CFUNCTYPE, byref
-from . import clibrebound, Escape, NoParticles, Encounter, SimulationError
+from . import clibrebound, Escape, NoParticles, Encounter, SimulationError, Exit_min_peri
 from .particle import Particle
 from .units import units_convert_particle, check_units, convert_G
 import math
@@ -850,6 +850,8 @@ class Simulation(Structure):
             clibrebound.reb_integrate.restype = c_int
             self.exact_finish_time = c_int(exact_finish_time)
             ret_value = clibrebound.reb_integrate(byref(self), c_double(tmax))
+            if ret_value == 101:
+                raise Exit_min_peri("A particle got too close to the central body.")
             if ret_value == 1:
                 raise SimulationError("An error occured during the integration.")
             if ret_value == 2:
@@ -870,6 +872,7 @@ class Simulation(Structure):
 
 # Setting up fields after class definition (because of self-reference)
 Simulation._fields_ = [
+                ("exit_min_peri", c_double),
                 ("t", c_double),
                 ("G", c_double),
                 ("softening", c_double),

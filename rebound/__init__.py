@@ -38,6 +38,8 @@ except:
 
 
 # Exceptions    
+class Exit_min_peri(Exception):
+    pass
 class SimulationError(Exception):  
     """The simulation exited with a generic error."""
     pass
@@ -65,4 +67,4 @@ from .particle import Particle
 from .plotting import OrbitPlot
 from .interruptible_pool import InterruptiblePool
 
-__all__ = ["__version__", "__build__", "Simulation", "Orbit", "OrbitPlot", "Particle", "SimulationError", "Encounter", "Escape", "NoParticles", "InterruptiblePool"]
+__all__ = ["__version__", "__build__", "Simulation", "Orbit", "OrbitPlot", "Particle", "SimulationError", "Encounter", "Escape", "NoParticles", "InterruptiblePool", "Exit_min_peri"]

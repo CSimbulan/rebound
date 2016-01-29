@@ -40,6 +40,7 @@ extern const char* reb_version_str;	///< Version string.
  * @brief Enumeration describing the return status of rebound_integrate
  */
 enum REB_STATUS {
+    REB_EXIT_MIN_PERI = 101,
 	REB_RUNNING_PAUSED = -3,	///< Simulation is paused by visualization.
 	REB_RUNNING_LAST_STEP = -2,	///< Current timestep is the last one. Needed to ensures that t=tmax exactly.
 	REB_RUNNING = -1,   		///< Simulation is current running, no error occured.
@@ -337,6 +338,7 @@ struct reb_collision{
  * function. This will ensure that all variables and pointers are initialized correctly.
  */
 struct reb_simulation {
+    double exit_min_peri;
 	/**
 	 * \name Variables related to time, current number of particles and simulation status/control 
 	 * @{
