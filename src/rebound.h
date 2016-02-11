@@ -40,6 +40,7 @@ extern const char* reb_version_str;	///< Version string.
  * @brief Enumeration describing the return status of rebound_integrate
  */
 enum REB_STATUS {
+    REB_EXIT_MIN_PERI = 101,
 	REB_RUNNING_PAUSED = -3,	///< Simulation is paused by visualization.
 	REB_RUNNING_LAST_STEP = -2,	///< Current timestep is the last one. Needed to ensures that t=tmax exactly.
 	REB_RUNNING = -1,   		///< Simulation is current running, no error occured.
@@ -47,7 +48,7 @@ enum REB_STATUS {
 	REB_EXIT_ERROR = 1,		///< A generic error occured and the integration was not successfull.
 	REB_EXIT_NOPARTICLES = 2,	///< The integration ends early because no particles are left in the simulation.
 	REB_EXIT_ENCOUNTER = 3,		///< The integration ends early because two particles had a close encounter (see exit_min_distance)
-	REB_EXIT_ESCAPE = 4,		///< The integration ends early because a particle escaped (see exit_min_distance)  
+	REB_EXIT_ESCAPE = 4,		///< The integration ends early because a particle escaped (see exit_max_distance)  
 	REB_EXIT_USER = 5,		///< User caused exit, simulation did not finish successfully.
 };
 
@@ -337,6 +338,7 @@ struct reb_collision{
  * function. This will ensure that all variables and pointers are initialized correctly.
  */
 struct reb_simulation {
+    double exit_min_peri;
 	/**
 	 * \name Variables related to time, current number of particles and simulation status/control 
 	 * @{

@@ -60,7 +60,7 @@
 static const char* logo[];				/**< Logo of rebound. */
 #endif // LIBREBOUND
 const char* reb_build_str = __DATE__ " " __TIME__;	// Date and time build string. 
-const char* reb_version_str = "2.11.1";			// **VERSIONLINE** This line gets updated automatically. Do not edit manually.
+const char* reb_version_str = "2.12.0";			// **VERSIONLINE** This line gets updated automatically. Do not edit manually.
 
 
 void reb_step(struct reb_simulation* const r){
@@ -252,6 +252,7 @@ struct reb_simulation* reb_create_simulation(){
 }
 
 void reb_init_simulation(struct reb_simulation* r){
+    r->exit_min_peri = 0;
 #ifndef LIBREBOUND
 	int i =0;
 	while (logo[i]!=NULL){ printf("%s",logo[i++]); }
@@ -420,6 +421,25 @@ int reb_check_exit(struct reb_simulation* const r, const double tmax, double* la
 
 void reb_run_heartbeat(struct reb_simulation* const r){
 	if (r->heartbeat){ r->heartbeat(r); }				// Heartbeat
+    if (r->exit_min_peri){
+        // Check for custom condition
+
+		const double min2 = r->exit_min_peri * r->exit_min_peri;
+		const struct reb_particle* const particles = r->particles;
+		const int N = r->N - r->N_var;
+		const struct reb_particle star = particles[0];
+		for(int i=1;i<N;i++){
+			struct reb_particle pi = particles[i];
+			const double x = pi.x - star.x;
+			const double y = pi.y - star.y;
+			const double z = pi.z - star.z;
+			const double r2 = x*x + y*y + z*z;
+
+			if (r2 < min2){
+				r->status = REB_EXIT_MIN_PERI;
+			}
+		}
+    }
 	if (r->exit_max_distance){
 		// Check for escaping particles
 		const double max2 = r->exit_max_distance * r->exit_max_distance;
@@ -470,6 +490,8 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
 
     // Copy and share simulation struct 
     struct reb_simulation* r = NULL;
+    char sem_name[256] = "reb_display";
+    sem_t* display_mutex;
    
     if (opengl_enabled){
         r = (struct reb_simulation*)mmap(r_user, sizeof(struct reb_simulation), PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED, -1, 0);
@@ -477,35 +499,30 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
         // Copy and share particle array
         r->particles = (struct reb_particle*)mmap(NULL, r->allocatedN*sizeof(struct reb_particle), PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED, -1, 0);
         memcpy(r->particles, r_user->particles, r->allocatedN*sizeof(struct reb_particle));
+        // Create Semaphore
+#ifdef MPI
+        sprintf(sem_name,"/reb_display_%d;",r_user->mpi_id);
+#endif // MPI
+        sem_unlink(sem_name); // unlink first
+        if ((display_mutex = sem_open(sem_name, O_CREAT | O_EXCL, 0666, 1))==SEM_FAILED){
+            perror("sem_open");
+            exit(EXIT_FAILURE);
+        }
+        // Need root_size for visualization. Creating one. 
+        if (r->root_size==-1){  
+            reb_warning("Configuring box automatically for vizualization based on particle positions.");
+            const struct reb_particle* p = r->particles;
+            double max_r = 0;
+            for (int i=0;i<r->N;i++){
+                const double _r = sqrt(p[i].x*p[i].x+p[i].y*p[i].y+p[i].z*p[i].z);
+                max_r = MAX(max_r, _r);
+            }
+            reb_configure_box(r, max_r*2.3,MAX(1.,r->root_nx),MAX(1.,r->root_ny),MAX(1.,r->root_nz));
+        }
     }else{
         r = r_user;
     }
 
-	// Create Semaphore
-#ifdef MPI
-    char sem_name[256];
-    sprintf(sem_name,"/reb_display_%d;",r_user->mpi_id);
-#else // MPI
-    char sem_name[256] = "reb_display";
-#endif // MPI
-	sem_unlink(sem_name); // unlink first
-	sem_t* display_mutex;
-	if ((display_mutex = sem_open(sem_name, O_CREAT | O_EXCL, 0666, 1))==SEM_FAILED){
-		perror("sem_open");
-		exit(EXIT_FAILURE);
-	}
-
-	// Need root_size for visualization. Creating one. 
-	if (r->root_size==-1){  
-		reb_warning("Configuring box automatically for vizualization based on particle positions.");
-		const struct reb_particle* p = r->particles;
-		double max_r = 0;
-		for (int i=0;i<r->N;i++){
-			const double _r = sqrt(p[i].x*p[i].x+p[i].y*p[i].y+p[i].z*p[i].z);
-			max_r = MAX(max_r, _r);
-		}
-		reb_configure_box(r, max_r*2.3,MAX(1.,r->root_nx),MAX(1.,r->root_ny),MAX(1.,r->root_nz));
-	}
 #else // OPENGL
 	struct reb_simulation* const r = r_user;
 #endif // OPENGL
@@ -569,9 +586,9 @@ enum REB_STATUS reb_integrate(struct reb_simulation* const r_user, double tmax){
         memcpy(r_user, r, sizeof(struct reb_simulation));
         r_user->particles = particles_user_loc;
         memcpy(r_user->particles, r->particles, r->N*sizeof(struct reb_particle));
+        sem_unlink(sem_name);
+        sem_close(display_mutex);
     }
-    sem_unlink(sem_name);
-    sem_close(display_mutex);
 #endif //OPENGL
 
 #ifndef LIBREBOUND
