@@ -38,3 +38,12 @@ Seed 90: Eccentricity over 0.999 detected at t = 622240.019738.
 Seed 90: Only one planet remained.
 Seed 96: Eccentricity over 0.999 detected at t = 683720.102061.
 A
+Seed 26: Only one planet remained.
+Seed 26: Only one planet remained.
+Seed 60: Only one planet remained.
+Seed 65: Eccentricity over 0.999 detected at t = 612009.082856.
+Seed 65: Eccentricity over 0.999 detected at t = 612009.082856.
+Seed 65: Eccentricity over 0.999 detected at t = 612009.082856.
+Seed 65: Eccentricity over 0.999 detected at t = 612009.082856.
+Seed 65: Eccentricity over 0.999 detected at t = 612009.082856.
+Seed 65: Eccentricity over 0.999 detected at t = 612009.082856.
