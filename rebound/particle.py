@@ -425,6 +425,11 @@ class Particle(Structure):
         return o
 
     @property
+    def index(self):
+        clibrebound.reb_get_particle_index.restype = c_int
+        return clibrebound.reb_get_particle_index(byref(self))  
+       	
+    @property
     def orb_radius(self):
         return self.calculate_orbit().r
     @property
