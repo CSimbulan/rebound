@@ -379,7 +379,7 @@ class Particle(Structure):
             self.vy = vy
             self.vz = vz
 
-    def calculate_orbit(self, primary=None):
+    def calculate_orbit(self, primary=None, G=None):
         """ 
         Returns a rebound.Orbit object with the keplerian orbital elements
         corresponding to the particle around the passed primary
@@ -398,24 +398,36 @@ class Particle(Structure):
         ----------
         primary : rebound.Particle
             Central body (Optional. Default uses Jacobi coordinates)
+        G : float
+            Gravitational constant (Optional. Default takes G from simulation in which particle is in)
         
         Returns
         -------
         A rebound.Orbit object 
         """
-        # First check whether this is particles[0]
-        clibrebound.reb_get_particle_index.restype = c_int
-        index = clibrebound.reb_get_particle_index(byref(self)) # first check this isn't particles[0]
-        if index == 0:
-            raise ValueError("Orbital elements for particle[0] not implemented.")
+        if not self._sim:
+            # Particle not in a simulation
+            if primary is None:
+                raise ValueError("Particle does not belong to any simulation and no primary given. Cannot calculate orbit.")
+            if G is None:
+                raise ValueError("Particle does not belong to any simulation and G not given. Cannot calculate orbit.")
+            else:
+                G = c_double(G)
+        else:
+            # First check whether this is particles[0]
+            clibrebound.reb_get_particle_index.restype = c_int
+            index = clibrebound.reb_get_particle_index(byref(self)) # first check this isn't particles[0]
+            if index == 0:
+                raise ValueError("Orbital elements for particle[0] not implemented.")
 
-        if primary is None:    # Use default, i.e., Jacobi coordinates
-            clibrebound.reb_get_jacobi_com.restype = Particle   # now return jacobi center of mass
-            primary = clibrebound.reb_get_jacobi_com(byref(self))
+            if primary is None:    # Use default, i.e., Jacobi coordinates
+                clibrebound.reb_get_jacobi_com.restype = Particle   # now return jacobi center of mass
+                primary = clibrebound.reb_get_jacobi_com(byref(self))
+            G = c_double(self._sim.contents.G)
         
         err = c_int()
         clibrebound.reb_tools_particle_to_orbit_err.restype = rebound.Orbit
-        o = clibrebound.reb_tools_particle_to_orbit_err(c_double(self._sim.contents.G), self, primary, byref(err))
+        o = clibrebound.reb_tools_particle_to_orbit_err(G, self, primary, byref(err))
 
         if err.value == 1:
             raise ValueError("Primary has no mass.")
@@ -423,15 +435,84 @@ class Particle(Structure):
             raise ValueError("Particle and primary positions are the same.")
 
         return o
+    
+    # Simple operators for particles.
+
+    def __sub__(self, other):
+        if isinstance(other, Particle):
+            np = Particle()
+            np.x = self.x - other.x
+            np.y = self.y - other.y
+            np.z = self.z - other.z
+            np.vx = self.vx - other.vx
+            np.vy = self.vy - other.vy
+            np.vz = self.vz - other.vz
+            np.m = self.m - other.m
+            return np
+        return NotImplemented 
+    
+    def __add__(self, other):
+        if isinstance(other, Particle):
+            np = Particle()
+            np.x = self.x + other.x
+            np.y = self.y + other.y
+            np.z = self.z + other.z
+            np.vx = self.vx + other.vx
+            np.vy = self.vy + other.vy
+            np.vz = self.vz + other.vz
+            np.m = self.m + other.m
+            return np
+        return NotImplemented 
+    
+    def __mul__(self, other):
+        if isinstance(other, float):
+            np = Particle()
+            np.x  = other*self.x
+            np.y  = other*self.y
+            np.z  = other*self.z
+            np.vx = other*self.vx
+            np.vy = other*self.vy
+            np.vz = other*self.vz 
+            np.m  = other*self.m 
+            return np
+        return NotImplemented 
+    
+    def __rmul__(self, other):
+        if isinstance(other, float):
+            np = Particle()
+            np.x  = other*self.x
+            np.y  = other*self.y
+            np.z  = other*self.z
+            np.vx = other*self.vx
+            np.vy = other*self.vy
+            np.vz = other*self.vz 
+            np.m  = other*self.m 
+            return np
+        return NotImplemented 
+
+    def __truediv__(self, other):
+        return self.__div__(other)
+
+    def __div__(self, other):
+        if isinstance(other, float):
+            np = Particle()
+            np.x  = self.x / other
+            np.y  = self.y / other
+            np.z  = self.z / other
+            np.vx = self.vx/ other
+            np.vy = self.vy/ other
+            np.vz = self.vz/ other 
+            np.m  = self.m / other 
+            return np
+        return NotImplemented 
 
     @property
     def index(self):
         clibrebound.reb_get_particle_index.restype = c_int
         return clibrebound.reb_get_particle_index(byref(self))  
        	
-    @property
-    def orb_radius(self):
-        return self.calculate_orbit().r
+    def d(self):
+        return self.calculate_orbit().d
     @property
     def v(self):
         return self.calculate_orbit().v 

@@ -405,7 +405,7 @@ struct reb_particle reb_tools_orbit2d_to_particle(double G, struct reb_particle 
 	return reb_tools_orbit_to_particle(G, primary, m, a, e, inc, Omega, omega, f);
 }
 
-static struct reb_particle reb_particle_nan(){
+static struct reb_particle reb_particle_nan(void){
     struct reb_particle p;
     p.x = nan("");
     p.y = nan("");
@@ -487,9 +487,9 @@ struct reb_particle reb_tools_orbit_to_particle(double G, struct reb_particle pr
 	return reb_tools_orbit_to_particle_err(G, primary, m, a, e, inc, Omega, omega, f, &err);
 }
 
-struct reb_orbit reb_orbit_nan(){
+struct reb_orbit reb_orbit_nan(void){
     struct reb_orbit o;
-    o.r = nan("");
+    o.d = nan("");
     o.v = nan("");
     o.h = nan("");
     o.P = nan("");
@@ -548,11 +548,11 @@ struct reb_orbit reb_tools_particle_to_orbit_err(double G, struct reb_particle p
 	dvx = p.vx - primary.vx;
 	dvy = p.vy - primary.vy;
 	dvz = p.vz - primary.vz;
-	o.r = sqrt ( dx*dx + dy*dy + dz*dz );
+	o.d = sqrt ( dx*dx + dy*dy + dz*dz );
 	
 	vsquared = dvx*dvx + dvy*dvy + dvz*dvz;
 	o.v = sqrt(vsquared);
-	vcircsquared = mu/o.r;	
+	vcircsquared = mu/o.d;	
 	o.a = -mu/( vsquared - 2.*vcircsquared );	// semi major axis
 	
 	hx = (dy*dvz - dz*dvy); 					//angular momentum vector
@@ -561,12 +561,12 @@ struct reb_orbit reb_tools_particle_to_orbit_err(double G, struct reb_particle p
 	o.h = sqrt ( hx*hx + hy*hy + hz*hz );		// abs value of angular momentum
 
 	vdiffsquared = vsquared - vcircsquared;	
-	if(o.r <= TINY){							
+	if(o.d <= TINY){							
 		*err = 2;									// particle is on top of primary
 		return reb_orbit_nan();
 	}
-	vr = (dx*dvx + dy*dvy + dz*dvz)/o.r;	
-	rvr = o.r*vr;
+	vr = (dx*dvx + dy*dvy + dz*dvz)/o.d;	
+	rvr = o.d*vr;
 	muinv = 1./mu;
 
 	ex = muinv*( vdiffsquared*dx - rvr*dvx );
@@ -587,11 +587,11 @@ struct reb_orbit reb_tools_particle_to_orbit_err(double G, struct reb_particle p
 	o.Omega = acos2(nx, n, ny);			// cos Omega is dot product of x and n unit vectors. Will = 0 if i=0.
 
     if(o.e < 1.){
-	    ea = acos2(1.-o.r/o.a, o.e, vr);// from definition of eccentric anomaly.  If vr < 0, must be going from apo to peri, so ea = [pi, 2pi] so ea = -acos(cosea)
+	    ea = acos2(1.-o.d/o.a, o.e, vr);// from definition of eccentric anomaly.  If vr < 0, must be going from apo to peri, so ea = [pi, 2pi] so ea = -acos(cosea)
 	    o.M = ea - o.e*sin(ea);			// mean anomaly (Kepler's equation)
     }
     else{
-        ea = acosh((1.-o.r/o.a)/o.e);
+        ea = acosh((1.-o.d/o.a)/o.e);
         if(vr < 0.){                    // Approaching pericenter, so eccentric anomaly < 0.
             ea = -ea;
         }
@@ -602,7 +602,7 @@ struct reb_orbit reb_tools_particle_to_orbit_err(double G, struct reb_particle p
 	// we therefore calculate those and calculate the remaining angles from them
 	if(o.inc < MIN_INC || o.inc > M_PI - MIN_INC){	// nearly planar.  Use longitudes rather than angles referenced to node for numerical stability.
 		o.pomega = acos2(ex, o.e, ey);		// cos pomega is dot product of x and e unit vectors.  Will = 0 if e=0.
-		o.theta = acos2(dx, o.r, dy);		// cos theta is dot product of x and r vectors (true longitude).  Will = 0 if e = 0.
+		o.theta = acos2(dx, o.d, dy);		// cos theta is dot product of x and r vectors (true longitude).  Will = 0 if e = 0.
 		if(o.inc < M_PI/2.){
 			o.omega = o.pomega - o.Omega;
 			o.f = o.theta - o.pomega;
@@ -616,7 +616,7 @@ struct reb_orbit reb_tools_particle_to_orbit_err(double G, struct reb_particle p
 	}
 	// in the non-planar case, we can't calculate the broken angles from vectors like above.  omega+f is always well defined, and omega if e!=0
 	else{
-		double wpf = acos2(nx*dx + ny*dy, n*o.r, dz);	// omega plus f.  Both angles measured in orbital plane, and always well defined for i!=0.
+		double wpf = acos2(nx*dx + ny*dy, n*o.d, dz);	// omega plus f.  Both angles measured in orbital plane, and always well defined for i!=0.
 		o.omega = acos2(nx*ex + ny*ey, n*o.e, ez);
 		if(o.inc < M_PI/2.){
 			o.pomega = o.Omega + o.omega;
@@ -700,8 +700,7 @@ int reb_add_var_2nd_order(struct reb_simulation* const r, int testparticle, int 
 }
 
 #ifndef LIBREBOUNDX
-void reb_tools_megno_init(struct reb_simulation* const r, double delta){
-	r->calculate_megno = 1;
+void reb_tools_megno_init(struct reb_simulation* const r){
 	r->megno_Ys = 0.;
 	r->megno_Yss = 0.;
 	r->megno_cov_Yt = 0.;
@@ -710,8 +709,10 @@ void reb_tools_megno_init(struct reb_simulation* const r, double delta){
 	r->megno_mean_Y = 0;
 	r->megno_mean_t = 0;
     int i = reb_add_var_1st_order(r,-1);
+	r->calculate_megno = i;
+    const int imax = i + (r->N-r->N_var);
     struct reb_particle* const particles = r->particles;
-    for (;i<r->N;i++){ 
+    for (;i<imax;i++){ 
         particles[i].m  = 0.;
 		particles[i].x  = reb_random_normal(1.);
 		particles[i].y  = reb_random_normal(1.);
@@ -719,7 +720,7 @@ void reb_tools_megno_init(struct reb_simulation* const r, double delta){
 		particles[i].vx = reb_random_normal(1.);
 		particles[i].vy = reb_random_normal(1.);
 		particles[i].vz = reb_random_normal(1.);
-		double deltad = delta/sqrt(
+		double deltad = 1./sqrt(
                 particles[i].x*particles[i].x 
                 + particles[i].y*particles[i].y 
                 + particles[i].z*particles[i].z 
@@ -744,25 +745,25 @@ double reb_tools_calculate_lyapunov(struct reb_simulation* r){ // Returns the la
 }
 double reb_tools_megno_deltad_delta(struct reb_simulation* const r){
 	const struct reb_particle* restrict const particles = r->particles;
-	const int N = r->N;
-	const int N_var = r->N_var;
-        double deltad = 0;
-        double delta2 = 0;
-        for (int i=N-N_var;i<N;i++){
-                deltad += particles[i].vx * particles[i].x; 
-                deltad += particles[i].vy * particles[i].y; 
-                deltad += particles[i].vz * particles[i].z; 
-                deltad += particles[i].ax * particles[i].vx; 
-                deltad += particles[i].ay * particles[i].vy; 
-                deltad += particles[i].az * particles[i].vz; 
-                delta2 += particles[i].x  * particles[i].x; 
-                delta2 += particles[i].y  * particles[i].y;
-                delta2 += particles[i].z  * particles[i].z;
-                delta2 += particles[i].vx * particles[i].vx; 
-                delta2 += particles[i].vy * particles[i].vy;
-                delta2 += particles[i].vz * particles[i].vz;
-        }
-        return deltad/delta2;
+    double deltad = 0;
+    double delta2 = 0;
+    int i = r->calculate_megno;
+    const int imax = i + (r->N-r->N_var);
+    for (;i<imax;i++){
+            deltad += particles[i].vx * particles[i].x; 
+            deltad += particles[i].vy * particles[i].y; 
+            deltad += particles[i].vz * particles[i].z; 
+            deltad += particles[i].ax * particles[i].vx; 
+            deltad += particles[i].ay * particles[i].vy; 
+            deltad += particles[i].az * particles[i].vz; 
+            delta2 += particles[i].x  * particles[i].x; 
+            delta2 += particles[i].y  * particles[i].y;
+            delta2 += particles[i].z  * particles[i].z;
+            delta2 += particles[i].vx * particles[i].vx; 
+            delta2 += particles[i].vy * particles[i].vy;
+            delta2 += particles[i].vz * particles[i].vz;
+    }
+    return deltad/delta2;
 }
 
 void reb_tools_megno_update(struct reb_simulation* r, double dY){

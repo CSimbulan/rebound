@@ -122,7 +122,7 @@ struct reb_particle {
  * a Keplerian orbit from Cartesian coordinates. 
  */
 struct reb_orbit {
-	double r;	///< Radial distance from central object
+	double d;	///< Radial distance from central object
 	double v;   ///< velocity relative to central object's velocity
 	double h;	///< Angular momentum
 	double P;	///< Orbital period
@@ -450,7 +450,7 @@ struct reb_simulation {
      * \name Variables related to the chaos indicator MEGNO 
      * @{
      */
-    int calculate_megno;    ///< Flag that determines if megno is calculated (default=0, but megno_init() sets it to 1)
+    int calculate_megno;    ///< Internal flag that determines if megno is calculated (default=0, but megno_init() sets it to the index of variational particles used for megno)
     double megno_Ys;    ///< Running megno sum (internal use)
     double megno_Yss;   ///< Running megno sum (internal use)
     double megno_cov_Yt;    ///< covariance of MEGNO Y and t
@@ -1211,10 +1211,9 @@ int reb_add_var_2nd_order(struct reb_simulation* const r, int testparticle, int 
 
 /** 
  * @brief Init the MEGNO particles, enable MEGNO calculation
- * @param delta The initial displacement (typically 1e-16)
  * @param r The rebound simulation to be considered
  */
-void reb_tools_megno_init(struct reb_simulation* const r, double delta);
+void reb_tools_megno_init(struct reb_simulation* const r);
 
 /**
  * @brief Get the current MEGNO value
