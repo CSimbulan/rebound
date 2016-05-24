@@ -218,6 +218,17 @@ class Simulation(Structure):
         if self._b_needsfree_ == 1: # to avoid, e.g., sim.particles[1]._sim.contents.G creating a Simulation instance to get G, and then freeing the C simulation when it immediately goes out of scope
             clibrebound.reb_free_pointers(byref(self))
 
+# Function to find what index a specific particles in self.particles array
+    def particle_index(self, particle):
+        pid = particle.id
+        particles = self.particles
+        ctr = 0
+        for p in particles:
+            if pid == p.id:
+                return ctr
+            else:
+                ctr += 1
+
 # Status functions
     def status(self):
         """ 

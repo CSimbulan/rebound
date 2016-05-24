@@ -1,8 +1,0 @@
-Simulation for Seed 41
-
-Solar mass star added at center.
-Jupiter mass planet added 13.2 AU away and 137.167448398 degrees.
-Jupiter mass planet added 32.3 AU away and 83.0589070718 degrees.
-Jupiter mass planet added 64.2 AU away and 59.7732207531 degrees.
-Jupiter mass planet added 73.7 AU away and 328.980036518 degrees.
-Jupiter mass planet added 91.0 AU away and 208.058049103 degrees.
