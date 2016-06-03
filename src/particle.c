@@ -112,6 +112,7 @@ void reb_remove_all(struct reb_simulation* const r){
 
 int reb_remove(struct reb_simulation* const r, int index, int keepSorted){
 	if (r->N==1){
+	    r->N = 0;
 		fprintf(stderr, "Last particle removed.\n");
 		return 1;
 	}
@@ -129,7 +130,8 @@ int reb_remove(struct reb_simulation* const r, int index, int keepSorted){
 			r->particles[j] = r->particles[j+1];
 		}
         if (r->tree_root){
-		    reb_exit("REBOUND cannot remove a particle a tree and keep the particles sorted.");
+		    fprintf(stderr, "\nREBOUND cannot remove a particle a tree and keep the particles sorted. Did not remove particle.\n");
+		    return 0;
         }
 	}else{
         if (r->tree_root){
@@ -157,4 +159,64 @@ int reb_remove_by_id(struct reb_simulation* const r, int id, int keepSorted){
 		fprintf(stderr, "\nIndex passed to particles_remove_id (id = %d) not found in particles array.  Did not remove particle.\n", id);
 	}
 	return success;
+}
+
+struct reb_particle reb_particle_minus(struct reb_particle p1, struct reb_particle p2){
+    struct reb_particle p = {0};
+    p.x = p1.x - p2.x;
+    p.y = p1.y - p2.y;
+    p.z = p1.z - p2.z;
+    p.vx = p1.vx - p2.vx;
+    p.vy = p1.vy - p2.vy;
+    p.vz = p1.vz - p2.vz;
+    p.ax = p1.ax - p2.ax;
+    p.ay = p1.ay - p2.ay;
+    p.az = p1.az - p2.az;
+    p.m = p1.m - p2.m;
+    return p;
+}
+
+struct reb_particle reb_particle_plus(struct reb_particle p1, struct reb_particle p2){
+    struct reb_particle p = {0};
+    p.x = p1.x + p2.x;
+    p.y = p1.y + p2.y;
+    p.z = p1.z + p2.z;
+    p.vx = p1.vx + p2.vx;
+    p.vy = p1.vy + p2.vy;
+    p.vz = p1.vz + p2.vz;
+    p.ax = p1.ax + p2.ax;
+    p.ay = p1.ay + p2.ay;
+    p.az = p1.az + p2.az;
+    p.m = p1.m + p2.m;
+    return p;
+}
+
+struct reb_particle reb_particle_multiply(struct reb_particle p1, double value){
+    struct reb_particle p = {0};
+    p.x = p1.x * value;
+    p.y = p1.y * value;
+    p.z = p1.z * value;
+    p.vx = p1.vx * value;
+    p.vy = p1.vy * value;
+    p.vz = p1.vz * value;
+    p.ax = p1.ax * value;
+    p.ay = p1.ay * value;
+    p.az = p1.az * value;
+    p.m = p1.m * value;
+    return p;
+}
+
+struct reb_particle reb_particle_divide(struct reb_particle p1, double value){
+    struct reb_particle p = {0};
+    p.x = p1.x / value;
+    p.y = p1.y / value;
+    p.z = p1.z / value;
+    p.vx = p1.vx / value;
+    p.vy = p1.vy / value;
+    p.vz = p1.vz / value;
+    p.ax = p1.ax / value;
+    p.ay = p1.ay / value;
+    p.az = p1.az / value;
+    p.m = p1.m / value;
+    return p;
 }
