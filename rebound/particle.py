@@ -486,7 +486,6 @@ class Particle(Structure):
         self.vz = float(value[2])
         
     @property
->>>>>>> hanno/master
     def d(self):
         return self.calculate_orbit().d
     @property
