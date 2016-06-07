@@ -263,6 +263,16 @@ class Simulation(Structure):
         ------- 
         A rebound.Simulation object.
         
+        Examples
+        --------
+        The following example creates a simulation, saves it to a file and then creates
+        a copy of the simulation store in the binary file.
+
+        >>> sim = rebound.Simulation()
+        >>> sim.add(m=1.)
+        >>> sim.add(m=1.e-3,x=1.,vy=1.)
+        >>> sim.save("simulation.bin")
+        >>> sim_copy = rebound.Simulation.from_file("simulation.bin")
         """
         if os.path.isfile(filename):
             clibrebound.reb_create_simulation_from_binary.restype = POINTER_REB_SIM
