@@ -36,7 +36,6 @@ except:
     # Might fails on python3 versions, but not important
     pass
 
-
 # Exceptions    
 class Exit_min_peri(Exception):
     pass
@@ -59,11 +58,14 @@ class NoParticles(Exception):
     """The simulation exited because no particles are left in the simulation."""
     pass
     
-
+class ParticleNotFound(Exception):
+    """Particle was not found in the simulation."""
+    pass
 
 from .simulation import Simulation, Orbit, Variation, reb_simulation_integrator_whfast, reb_simulation_integrator_sei
 from .particle import Particle
 from .plotting import OrbitPlot
+from .tools import hash
 from .interruptible_pool import InterruptiblePool
 
-__all__ = ["__version__", "__build__", "Simulation", "Orbit", "OrbitPlot", "Particle", "SimulationError", "Encounter", "Escape", "NoParticles", "InterruptiblePool", "Exit_min_peri", "Variation", "reb_simulation_integrator_whfast", "reb_simulation_integrator_sei"]
+__all__ = ["__version__", "__build__", "Simulation", "Orbit", "OrbitPlot", "Particle", "SimulationError", "Encounter", "Escape", "NoParticles", "ParticleNotFound", "Exit_min_peri", "InterruptiblePool","Variation", "reb_simulation_integrator_whfast", "reb_simulation_integrator_sei"]

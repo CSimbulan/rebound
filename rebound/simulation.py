@@ -1,9 +1,10 @@
-from ctypes import Structure, c_double, POINTER, c_int, c_uint, c_long, c_ulong, c_void_p, c_char_p, CFUNCTYPE, byref
-from . import clibrebound, Escape, NoParticles, Encounter, SimulationError, Exit_min_peri
+from ctypes import Structure, c_double, POINTER, c_int, c_uint, c_uint32, c_long, c_ulong, c_ulonglong, c_void_p, c_char_p, CFUNCTYPE, byref
+from . import clibrebound, Escape, NoParticles, Encounter, SimulationError, ParticleNotFound, Exit_min_peri
 from .particle import Particle
 from .units import units_convert_particle, check_units, convert_G
 import math
 import os
+import sys
 import ctypes.util
 try:
     import pkg_resources
@@ -15,10 +16,14 @@ import types
 ### The following enum and class definitions need to
 ### consitent with those in rebound.h
         
-INTEGRATORS = {"ias15": 0, "whfast": 1, "sei": 2, "wh": 3, "leapfrog": 4, "hybrid": 5, "none": 6}
+INTEGRATORS = {"ias15": 0, "whfast": 1, "sei": 2, "wh": 3, "leapfrog": 4, "hermes": 5, "none": 6}
 BOUNDARIES = {"none": 0, "open": 1, "periodic": 2, "shear": 3}
 GRAVITIES = {"none": 0, "basic": 1, "compensated": 2, "tree": 3}
 COLLISIONS = {"none": 0, "direct": 1, "tree": 2}
+
+class reb_hash_pointer_pair(Structure):
+    _fields_ = [("hash", c_uint32),
+                ("index", c_int)]
 
 class reb_vec3d(Structure):
     _fields_ = [("x", c_double),
@@ -49,9 +54,28 @@ class reb_collision(Structure):
                 ("time", c_double),
                 ("ri", c_int)]
 
-class reb_simulation_integrator_hybrid(Structure):
-    _fields_ = [("switch_ratio", c_double),
-                ("mode", c_int)]
+class reb_simulation_integrator_hermes(Structure):
+    _fields_ = [("mini", c_void_p),
+                ("global", c_void_p),
+                ("hill_switch_factor", c_double),
+                ("radius_switch_factor", c_double),
+                ("mini_active", c_int),
+                ("collision_this_global_dt", c_int),
+                ("energy_before_timestep", c_double),
+                ("global_index_from_mini_index", POINTER(c_int)),
+                ("global_index_from_mini_index_N",c_int),
+                ("global_index_from_mini_index_Nmax",c_int),
+                ("is_in_mini", POINTER(c_int)),
+                ("is_in_mini_Nmax", c_int),
+                ("a_i", POINTER(c_double)),
+                ("a_f", POINTER(c_double)),
+                ("a_Nmax", c_int),
+                ("timestep_too_large_warning", c_int),
+                ("steps", c_ulonglong),
+                ("steps_miniactive", c_ulonglong),
+                ("steps_miniN", c_ulonglong),
+                ]
+
 
 class reb_simulation_integrator_wh(Structure):
     _fields_ = [(("allocatedN"), c_int),
@@ -114,8 +138,8 @@ class reb_simulation_integrator_whfast(Structure):
     This struct should be accessed via the simulation class only. Here is an 
     example:
 
-    >>> sim = rebound.Simulation
-    >>> sim.ri_hybarid.corrector =  11
+    >>> sim = rebound.Simulation()
+    >>> sim.ri_whfast.corrector =  11
 
     
     :ivar int corrector:      
@@ -421,7 +445,7 @@ class Simulation(Structure):
         - ``'sei'``
         - ``'wh'``
         - ``'leapfrog'``
-        - ``'hybrid'``
+        - ``'hermes'``
         - ``'none'``
         
         Check the online documentation for a full description of each of the integrators. 
@@ -656,14 +680,12 @@ class Simulation(Structure):
         """
         cur_var_config_N = self.var_config_N
         if order==1:
-            clibrebound.reb_add_var_1st_order.restype = c_int
             index = clibrebound.reb_add_var_1st_order(byref(self),c_int(testparticle))
         elif order==2:
             if first_order is None:
                 raise AttributeError("Please specify corresponding first order variational equations when initializing second order variational equations.")
             if first_order_2 is None:
                 first_order_2 = first_order
-            clibrebound.reb_add_var_2nd_order.restype = c_int
             index = clibrebound.reb_add_var_2nd_order(byref(self),c_int(testparticle),c_int(first_order.index),c_int(first_order_2.index))
         else:
             raise AttributeError("Only variational equations of first and second order are supported.")
@@ -727,20 +749,17 @@ class Simulation(Structure):
         """
         if particle is not None:
             if isinstance(particle, Particle):
-                if kwargs == {}: # copy particle
-                    if (self.gravity == "tree" or self.collision == "tree") and self.root_size <=0.:
-                        raise ValueError("The tree code for gravity and/or collision detection has been selected. However, the simulation box has not been configured yet. You cannot add particles until the the simulation box has a finite size.")
+                if (self.gravity == "tree" or self.collision == "tree") and self.root_size <=0.:
+                    raise ValueError("The tree code for gravity and/or collision detection has been selected. However, the simulation box has not been configured yet. You cannot add particles until the the simulation box has a finite size.")
 
-                    clibrebound.reb_add(byref(self), particle)
-                else: # use particle as primary
-                    self.add(Particle(simulation=self, primary=particle, **kwargs))
+                clibrebound.reb_add(byref(self), particle)
             elif isinstance(particle, list):
                 for p in particle:
                     self.add(p)
             elif isinstance(particle,str):
                 if None in self.units.values():
                     self.units = ('AU', 'yr2pi', 'Msun')
-                self.add(horizons.getParticle(particle,**kwargs))
+                self.add(horizons.getParticle(particle, **kwargs), hash=particle)
                 units_convert_particle(self.particles[-1], 'km', 's', 'kg', self._units['length'], self._units['time'], self._units['mass'])
             else: 
                 raise ValueError("Argument passed to add() not supported.")
@@ -771,26 +790,39 @@ class Simulation(Structure):
         """
         clibrebound.reb_remove_all(byref(self))
 
-    def remove(self, index=None, id=None, keepSorted=1):
+    def remove(self, index=None, hash=None, keepSorted=True):
         """ 
         Removes a particle from the simulation.
 
         Parameters
         ----------
-        Either the index in the particles array to remove, or the id of the particle to
-        remove.  The keepSorted flag ensures the particles array remains sorted
-        in order of increasing ids.  One might set it to zero in cases with many
-        particles and many removals to speed things up.
+        index : int, optional
+            Specify particle to remove by index.
+        hash : c_uint32 or string, optional
+            Specify particle to remove by hash (if a string is passed, the corresponding hash is calculated).
+        keepSorted : bool, optional
+            By default, remove preserves the order of particles in the particles array. 
+            Might set it to zero in cases with many particles and many removals to speed things up.
         """
         if index is not None:
             success = clibrebound.reb_remove(byref(self), c_int(index), keepSorted)
             if not success:
                 raise ValueError("Removing particle with index %d failed. Did not remove particle.\n"%(index))
             return
-        if id is not None:
-            success = clibrebound.reb_remove_by_id(byref(self), c_int(id), keepSorted)
-            if success == 0:
-                raise ValueError("id %d passed to remove_particle was not found.  Did not remove particle.\n"%(id))
+        if hash is not None:
+            PY3 = sys.version_info[0] == 3
+            if PY3:
+                string_types = str,
+                int_types = int,
+            else:
+                string_types = basestring,
+                int_types = int, long,
+            if isinstance(hash,string_types):
+                success = clibrebound.reb_remove_by_name(byref(self), c_char_p(hash.encode('utf-8')), keepSorted)
+            elif isinstance(hash, int_types):
+                success = clibrebound.reb_remove_by_hash(byref(self), c_uint32(hash), keepSorted)
+            if not success:
+                raise ValueError("Removing particle with hash {0} failed. Did not remove particle.\n".format(hash))
 
     def particles_ascii(self, prec=8):
         """
@@ -826,6 +858,46 @@ class Simulation(Structure):
                     self.add(p)
                 except:
                     raise AttributeError("Each line requires 8 floats corresponding to mass, radius, position (x,y,z) and velocity (x,y,z).")
+
+    def generate_unique_hash(self):
+        """
+        Get a unique hash to assign to a particle in the simulation.
+        """
+        clibrebound.reb_generate_unique_hash.restype = c_uint32
+        return clibrebound.reb_generate_unique_hash(byref(self))
+
+    def get_particle_by_hash(self, hash):
+        """
+        Retrieve a particle from the simulation by using a hash.
+        The hash can either be an integer (i.e. the hash itself), or a string in 
+        which case the simulation will calculate the corresponding hash.
+        
+        Will raise ParticleNotFound error if not found.
+
+        Parameters
+        ----------
+        hash: string or integer
+            If string, the simulation will convert it to a hash and then search for the particle.
+        """
+        PY3 = sys.version_info[0] == 3
+        if PY3:
+            string_types = str,
+            int_types = int,
+        else:
+            string_types = basestring,
+            int_types = int, long,
+        if isinstance(hash,string_types):
+            clibrebound.reb_get_particle_by_name.restype = POINTER(Particle)
+            ptr = clibrebound.reb_get_particle_by_name(byref(self), c_char_p(hash.encode('utf-8')))
+        elif isinstance(hash, int_types):
+            clibrebound.reb_get_particle_by_hash.restype = POINTER(Particle)
+            ptr = clibrebound.reb_get_particle_by_hash(byref(self), c_uint32(hash))
+        else:
+            raise AttributeError("Expecting string or integer as argument")
+        if ptr:
+            return ptr.contents
+        else:
+            raise ParticleNotFound("Particle was not found in the simulation.") 
 
 # Orbit calculation
     def calculate_orbits(self, heliocentric=False, barycentric=False):
@@ -1007,7 +1079,6 @@ class Simulation(Structure):
         
         """
         if debug.integrator_package =="REBOUND":
-            clibrebound.reb_integrate.restype = c_int
             self.exact_finish_time = c_int(exact_finish_time)
             ret_value = clibrebound.reb_integrate(byref(self), c_double(tmax))
             if ret_value == 101:
@@ -1034,9 +1105,7 @@ class Simulation(Structure):
         Call this function to update the tree structure manually after removing particles.
         """
         clibrebound.reb_tree_update(byref(self))
-
-
-
+    
 class Variation(Structure):
     """
     REBOUND Variational Configuration Object.
@@ -1166,6 +1235,10 @@ Simulation._fields_ = [
                 ("var_config", POINTER(Variation)),
                 ("N_active", c_int),
                 ("testparticle_type", c_int),
+                ("_particle_lookup_table", POINTER(reb_hash_pointer_pair)),
+                ("hash_ctr", c_int),
+                ("N_lookup", c_int),
+                ("allocatedN_lookup", c_int),
                 ("allocated_N", c_int),
                 ("_particles", POINTER(Particle)),
                 ("gravity_cs", POINTER(reb_vec3d)),
@@ -1181,6 +1254,8 @@ Simulation._fields_ = [
                 ("exit_max_distance", c_double),
                 ("exit_min_distance", c_double),
                 ("usleep", c_double),
+                ("track_energy_offset", c_int),
+                ("energy_offset", c_double),
                 ("boxsize", reb_vec3d),
                 ("boxsize_max", c_double),
                 ("root_size", c_double),
@@ -1191,6 +1266,7 @@ Simulation._fields_ = [
                 ("nghostx", c_int),
                 ("nghosty", c_int),
                 ("nghostz", c_int),
+                ("collision_resolve_keep_sorted", c_int),
                 ("collisions", c_void_p),
                 ("collisions_allocatedN", c_int),
                 ("minimum_collision_celocity", c_double),
@@ -1211,9 +1287,9 @@ Simulation._fields_ = [
                 ("_gravity", c_int),
                 ("ri_sei", reb_simulation_integrator_sei), 
                 ("ri_wh", reb_simulation_integrator_wh), 
-                ("ri_hybrid", reb_simulation_integrator_hybrid),
                 ("ri_whfast", reb_simulation_integrator_whfast),
                 ("ri_ias15", reb_simulation_integrator_ias15),
+                ("ri_hermes", reb_simulation_integrator_hermes),
                 ("_additional_forces", CFUNCTYPE(None,POINTER(Simulation))),
                 ("_post_timestep_modifications", CFUNCTYPE(None,POINTER(Simulation))),
                 ("_heartbeat", CFUNCTYPE(None,POINTER(Simulation))),
@@ -1235,7 +1311,7 @@ Particle._fields_ = [("x", c_double),
                 ("r", c_double),
                 ("lastcollision", c_double),
                 ("c", c_void_p),
-                ("id", c_int),
+                ("_hash", c_uint32),
                 ("ap", c_void_p),
                 ("_sim", POINTER(Simulation))]
 
